@@ -1,21 +1,19 @@
-from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
-from PyQt5.QtGui import QColor, QDesktopServices
+from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant, QUrl
+from PyQt5.QtGui import QColor, QDesktopServices, QPixmap
 from PyQt5.QtWidgets import (
     QApplication, QTableView, QHeaderView,
-    QWidget, QVBoxLayout, QPushButton, QHBoxLayout
+    QWidget, QVBoxLayout, QPushButton, QHBoxLayout, QLabel
 )
 from PIL import Image
 from random import randint
 import sys
-from PyQt5.QtCore import QUrl
 import os
+
 
 # ============================================
 # Modelo da Matriz
 # ============================================
 class MatrizModel(QAbstractTableModel):
-
-
     def __init__(self, rows=20, cols=20):
         super().__init__()
         self.rows = rows
@@ -78,16 +76,16 @@ class MatrizModel(QAbstractTableModel):
 
 
 # ============================================
-# View da Matriz
+# View da Matriz (suporta paint ao arrastar)
 # ============================================
 class MatrizView(QTableView):
     def __init__(self, model):
         super().__init__()
         self.setModel(model)
 
-        self.setMouseTracking(True)   # permite capturar movimento sem clique
-        self.mouse_pressed = False    # controle do clique
-        self.toggle_value = None      # valor que será "pintado" ao arrastar
+        self.setMouseTracking(True)
+        self.mouse_pressed = False
+        self.toggle_value = None
 
         # Remover barras de navegação
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -114,9 +112,7 @@ class MatrizView(QTableView):
         for r in range(rows):
             self.setRowHeight(r, cell_size)
 
-    # =============================
-    #   Eventos do Mouse
-    # =============================
+    # Eventos do mouse para clicar + arrastar
     def mousePressEvent(self, event):
         if event.buttons() & Qt.LeftButton:
             self.mouse_pressed = True
@@ -125,10 +121,8 @@ class MatrizView(QTableView):
             if index.isValid():
                 r = index.row()
                 c = index.column()
-
                 current = self.model().data_matrix[r][c]
                 self.toggle_value = 1 - current
-
                 self.model().setData(index, self.toggle_value)
 
     def mouseMoveEvent(self, event):
@@ -137,7 +131,6 @@ class MatrizView(QTableView):
             if index.isValid():
                 r = index.row()
                 c = index.column()
-
                 if self.model().data_matrix[r][c] != self.toggle_value:
                     self.model().setData(index, self.toggle_value)
 
@@ -145,12 +138,17 @@ class MatrizView(QTableView):
         self.mouse_pressed = False
         self.toggle_value = None
 
+
 # ============================================
 # Janela principal
 # ============================================
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
+
+        # garantir pasta gifs existe
+        if not os.path.exists("gifs"):
+            os.makedirs("gifs")
 
         # LAYOUT PRINCIPAL HORIZONTAL (matriz esquerda, botões direita)
         main_layout = QHBoxLayout(self)
@@ -165,17 +163,17 @@ class MainWindow(QWidget):
         # ===============================================
         side_panel = QVBoxLayout()
 
-        btn_next = QPushButton("Próxima Geração")
-        btn_prev = QPushButton("Voltar Geração")
-        btn_25 = QPushButton("GIF 25 Gerações")
-        btn_reset = QPushButton("Resetar Matriz")
-        btn_filmoteca = QPushButton("Filmoteca")
+        # Botões
+        btn_next = QPushButton("Próxima Geração ⏭️")
+        btn_prev = QPushButton("Voltar Geração ⏮️")
+        btn_25 = QPushButton("GIF 25 Gerações 📷")
+        btn_100 = QPushButton("GIF 100 Gerações 🎥 ")
+        btn_reset = QPushButton("Resetar Matriz 🧼")
+        btn_filmoteca = QPushButton("Filmoteca 💾 ")
 
-
-        
         # BOTÕES ESTILO RETANGULAR & GRANDES
-        for btn in (btn_next, btn_prev, btn_25, btn_reset,btn_filmoteca):
-            btn.setFixedSize(200, 60)   # retangulares
+        for btn in (btn_next, btn_prev, btn_25, btn_100, btn_reset, btn_filmoteca):
+            btn.setFixedSize(200, 60)
             btn.setStyleSheet("""
                 QPushButton {
                     font-size: 18px;
@@ -188,28 +186,60 @@ class MainWindow(QWidget):
                 }
             """)
 
+        # Conectar sinais
         btn_next.clicked.connect(self.handle_next_gen)
         btn_prev.clicked.connect(self.handle_prev_gen)
         btn_25.clicked.connect(self.handle_25_gens_gif)
+        btn_100.clicked.connect(self.handle_100_gens_gif)
         btn_reset.clicked.connect(self.handle_reset_matrix)
         btn_filmoteca.clicked.connect(self.handle_open_gif_folder)
 
-
-
-
-        # Adicionar botões ao painel lateral
+        # Adicionar botões ao painel lateral (ordem visual)
         side_panel.addWidget(btn_next)
         side_panel.addWidget(btn_prev)
         side_panel.addWidget(btn_25)
+        side_panel.addWidget(btn_100)
         side_panel.addWidget(btn_filmoteca)
         side_panel.addWidget(btn_reset)
 
+        # ============================
+        # ÁREA DE MINIATURAS (FILMOTECA)
+        # ============================
+        side_panel.addSpacing(10)
+
+        lbl_title = QLabel("Últimos GIFs")
+        lbl_title.setAlignment(Qt.AlignCenter)  # CENTRALIZA O TEXTO
+        lbl_title.setStyleSheet("""
+            font-weight: bold;
+            font-size: 18px;
+        """)
+
+        side_panel.addWidget(lbl_title)
+
+
+        self.thumb_container = QVBoxLayout()
+        self.thumb_labels = []
+        self.thumb_paths = []  # caminhos correspondentes
+
+        for _ in range(4):
+            lbl = QLabel()
+            lbl.setFixedSize(200, 120)
+            lbl.setStyleSheet("background-color: #eeeeee; border: 1px solid #444;")
+            lbl.setAlignment(Qt.AlignCenter)
+            # deixar espaço para clicar - usaremos mousePressEvent via função lambda
+            self.thumb_labels.append(lbl)
+            self.thumb_container.addWidget(lbl)
+
+        side_panel.addLayout(self.thumb_container)
 
         # empurra os botões para cima
         side_panel.addStretch()
 
         # adiciona o painel lateral ao layout principal
         main_layout.addLayout(side_panel)
+
+        # Carregar miniaturas existentes ao iniciar
+        self.update_thumbnails()
 
         # ============================
         # FULLSCREEN SEM BORDA
@@ -228,36 +258,83 @@ class MainWindow(QWidget):
 
         self.view.adjust_cell_sizes(matriz_width, matriz_height)
 
+    # --------------------------------------------------
+    # Atualiza as miniaturas (4 mais recentes)
+    # --------------------------------------------------
+    def update_thumbnails(self):
+        folder = "gifs"
+        # se pasta não existe, limpa miniaturas
+        if not os.path.exists(folder):
+            for lbl in self.thumb_labels:
+                lbl.clear()
+                lbl.setText("Sem GIF")
+            self.thumb_paths = []
+            return
+
+        files = sorted(
+            [f for f in os.listdir(folder) if f.lower().endswith(".gif")],
+            key=lambda x: os.path.getmtime(os.path.join(folder, x)),
+            reverse=True
+        )
+
+        last4 = files[:4]
+        self.thumb_paths = []
+
+        for i, lbl in enumerate(self.thumb_labels):
+            if i < len(last4):
+                gif_path = os.path.abspath(os.path.join(folder, last4[i]))
+                self.thumb_paths.append(gif_path)
+
+                # Carrega com QPixmap (mostra primeira frame estática)
+                pix = QPixmap(gif_path)
+                if not pix.isNull():
+                    pix = pix.scaled(
+                        lbl.width(), lbl.height(),
+                        Qt.KeepAspectRatio, Qt.SmoothTransformation
+                    )
+                    lbl.setPixmap(pix)
+                else:
+                    lbl.clear()
+                    lbl.setText(last4[i])
+                # Conectar clique: abrir a pasta / arquivo
+                # precisamos definir um closure porque estamos dentro de loop
+                def make_open(path):
+                    return lambda ev: QDesktopServices.openUrl(QUrl.fromLocalFile(path))
+                # substituir evento mousePressEvent do label
+                lbl.mousePressEvent = lambda ev, p=gif_path: QDesktopServices.openUrl(QUrl.fromLocalFile(p))
+            else:
+                lbl.clear()
+                lbl.setText("Sem GIF")
+
+    # --------------------------------------------------
+    # Abrir pasta gifs/
+    # --------------------------------------------------
     def handle_open_gif_folder(self):
         folder = os.path.abspath("gifs")
-        
-        # Se a pasta não existir, criar
         if not os.path.exists(folder):
             os.makedirs(folder)
-
-        # Abrir no explorador de arquivos
         QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
+    # --------------------------------------------------
+    # Reseta toda a matriz para branco
+    # --------------------------------------------------
     def handle_reset_matrix(self):
-        # Zera toda a matriz
         self.model.data_matrix = [
             [0 for _ in range(self.model.cols)]
             for _ in range(self.model.rows)
         ]
-
-        # Reseta histórico
         self.model.history = []
-
-        # Atualiza visualização
         self.model.layoutChanged.emit()
 
-
+    # --------------------------------------------------
+    # Gera GIF 25 gerações
+    # --------------------------------------------------
     def handle_25_gens_gif(self):
         frames = []
         temp_matrix = [row[:] for row in self.model.data_matrix]  # backup
         temp_history = self.model.history[:]
 
-        scale = 5  # fator de escala para visualização
+        scale = 5
         img_width = self.model.cols * scale
         img_height = self.model.rows * scale
 
@@ -274,6 +351,9 @@ class MainWindow(QWidget):
             self.model.next_generation()
 
         gif_path = f"gifs/{randint(1000000,9999999)}_25gens.gif"
+        # garante pasta
+        if not os.path.exists("gifs"):
+            os.makedirs("gifs")
         frames[0].save(
             gif_path,
             save_all=True,
@@ -283,48 +363,63 @@ class MainWindow(QWidget):
         )
         print(f"GIF salvo como {gif_path}")
 
+        # restaurar estado
         self.model.data_matrix = temp_matrix
         self.model.history = temp_history
         self.model.layoutChanged.emit()
 
-        # Removido: adição duplicada de widgets/layouts
+        # atualizar miniaturas
+        self.update_thumbnails()
+
+    # --------------------------------------------------
+    # Gera GIF 100 gerações
+    # --------------------------------------------------
+    def handle_100_gens_gif(self):
+        frames = []
+        temp_matrix = [row[:] for row in self.model.data_matrix]  # backup
+        temp_history = self.model.history[:]
+
+        scale = 5
+        img_width = self.model.cols * scale
+        img_height = self.model.rows * scale
+
+        for i in range(100):
+            img = Image.new("RGB", (img_width, img_height), color="white")
+            pixels = img.load()
+            for r in range(self.model.rows):
+                for c in range(self.model.cols):
+                    if self.model.data_matrix[r][c]:
+                        for dr in range(scale):
+                            for dc in range(scale):
+                                pixels[c*scale+dc, r*scale+dr] = (0, 0, 0)
+            frames.append(img.copy())
+            self.model.next_generation()
+
+        gif_path = f"gifs/{randint(1000000,9999999)}_100gens.gif"
+        if not os.path.exists("gifs"):
+            os.makedirs("gifs")
+        frames[0].save(
+            gif_path,
+            save_all=True,
+            append_images=frames[1:],
+            duration=100,
+            loop=0,
+        )
+        print(f"GIF salvo como {gif_path}")
+
+        # restaurar estado
+        self.model.data_matrix = temp_matrix
+        self.model.history = temp_history
+        self.model.layoutChanged.emit()
+
+        # atualizar miniaturas
+        self.update_thumbnails()
 
     def handle_next_gen(self):
         self.model.next_generation()
 
     def handle_prev_gen(self):
         self.model.previous_generation()
-
-    def handle_100_gens_gif(self):
-        frames = []
-        temp_matrix = [row[:] for row in self.model.data_matrix]  # backup
-        temp_history = self.model.history[:]
-
-        for i in range(20):
-            # Criar imagem para GIF
-            img = Image.new("RGB", (self.model.cols, self.model.rows), color="white")
-            pixels = img.load()
-            for c in range(self.model.rows):
-                for r in range(self.model.cols):
-                    if self.model.data_matrix[r][c]:
-                        pixels[c, r] = (255, 255, 0)  # amarelo
-            frames.append(img.copy())
-            self.model.next_generation()
-
-        # Salvar GIF
-        frames[0].save(
-            f"gifs/{randint(1000000,9999999)}.gif",
-            save_all=True,
-            append_images=frames[1:],
-            duration=100,
-            loop=0,
-        )
-        print("GIF salvo como jogo_da_vida_20gens.gif")
-
-        # Restaurar estado
-        self.model.data_matrix = temp_matrix
-        self.model.history = temp_history
-        self.model.layoutChanged.emit()
 
 
 # ============================================
