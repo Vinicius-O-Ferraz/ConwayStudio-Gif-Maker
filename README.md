@@ -1,4 +1,4 @@
-# 🧬 Game of Life – Visualizador e Gerador de GIFs
+# 🧬 ConwayStudio – Visualizador e Gerador de GIFs do jogo da vida
 
 Um visualizador interativo do Jogo da Vida de Conway, com editor de matriz, simulação passo a passo e exportação para GIF.
 Desenvolvido em Python + PyQt5 + Pillow.
