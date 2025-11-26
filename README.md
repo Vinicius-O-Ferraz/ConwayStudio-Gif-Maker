@@ -17,9 +17,29 @@ Este projeto é uma interface gráfica completa para editar, visualizar e regist
 
 Em seguida, foi implementado o modelo de simulação epidemiológica espacial. Cujo esquema pode ser visualizado abaixo:
 
-<div align="center">
-      <img width="924" height="297" alt="image" src="https://github.com/user-attachments/assets/dc2c25a3-3eeb-4610-9a5d-0ea99c376b7d" />
+<div align= "center">
+
+<table>
+  <tr>
+    <td>
+      <img width="450" src="https://github.com/user-attachments/assets/dc2c25a3-3eeb-4610-9a5d-0ea99c376b7d" />
+    </td>
+    <td>
+      <table>
+        <tr><th>Estado</th><th>Código</th><th>Cor (Nome)</th></tr>
+        <tr><td>Suscetível</td><td>0</td><td>branco</td></tr>
+        <tr><td>Exposto</td><td>1</td><td>laranja</td></tr>
+        <tr><td>Infectado</td><td>2</td><td>vermelho</td></tr>
+        <tr><td>Recuperado</td><td>3</td><td>verde</td></tr>
+        <tr><td>Morto</td><td>4</td><td>cinza</td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+      
 </div>
+
+
 
 
 A interface foi construída com PyQt5, e as imagens/frames dos GIFs com Pillow (PIL).
