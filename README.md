@@ -1,20 +1,26 @@
 # 🧬 ConwayStudio – Visualizador e Gerador de GIFs do jogo da vida
 
-Um visualizador interativo do Jogo da Vida de Conway, com editor de matriz, simulação passo a passo e exportação para GIF.
+Um visualizador interativo do Jogo da Vida de Conway e implementação de modelo epidemiológico espacial (SEIRD), com editor de matriz, simulação passo a passo e exportação para GIF.
 Desenvolvido em Python + PyQt5 + Pillow.
 
 # Demonstração
 
 <div align="center">
 
-![Timeline-1](https://github.com/user-attachments/assets/3c9250cd-0a6c-42c0-ae79-4d2fd080f532)
+![python-2025-11-26-15-59-45](https://github.com/user-attachments/assets/0686a11d-c0c6-44bb-b0cd-572ee4fd1e4c)
 
 </div>
 
 # ✨ Sobre o projeto 
 
-Este projeto é uma interface gráfica completa para editar, visualizar e registrar simulações do Jogo da Vida, um autômato celular criado por John Conway.
-O objetivo é permitir experimentar padrões, observar comportamentos e gerar GIFs automaticamente das gerações da simulação.
+Este projeto é uma interface gráfica completa para editar, visualizar e registrar simulações do Jogo da Vida, um autômato celular criado por John Conway. O objetivo é permitir experimentar padrões, observar comportamentos e gerar GIFs automaticamente das gerações da simulação.
+
+Em seguida, foi implementado o modelo de simulação epidemiológica espacial. Cujo esquema pode ser visualizado abaixo:
+
+<div align="center">
+      <img width="924" height="297" alt="image" src="https://github.com/user-attachments/assets/dc2c25a3-3eeb-4610-9a5d-0ea99c376b7d" />
+</div>
+
 
 A interface foi construída com PyQt5, e as imagens/frames dos GIFs com Pillow (PIL).
 
@@ -53,6 +59,11 @@ Uma exploração mais aprofundada pode ser encontrada no paper anexado na pasta 
   <tr>
     <td>Filmoteca 💾</td>
     <td>Abre a pasta de GIFs</td>
+  </tr>
+
+  <tr>
+    <td>Randomizar Infectados 🔥</td>
+    <td>Gera infectados aleatóriamente</td>
   </tr>
   <tr>
     <td>Resetar Matriz 🧼</td>
