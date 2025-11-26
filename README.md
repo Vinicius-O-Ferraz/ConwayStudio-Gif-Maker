@@ -93,12 +93,24 @@ Uma exploração mais aprofundada pode ser encontrada no paper anexado na pasta 
 
 </div>
 
+# Exemplo de gif
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/dd699054-e338-49db-b78e-1056d55c74af" width="500">
+</div>
+
+  
+
 # 📁 Organização da pasta gifs
 
 A pasta gifs/ é criada automaticamente.
 Ela pode ser aberta pelo botão Filmoteca.
 
 Sempre ficam disponíveis as 4 miniaturas mais recentes no painel lateral.
+
+
+
+
+
 # 🚀 Instalação (Windows)
 ## 1. Clone o repositório
 ```
